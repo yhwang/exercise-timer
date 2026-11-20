@@ -28,7 +28,7 @@
       </div>
     </header>
     <div class="form">
-      <label class="wide">Name <input id="f-name" type="text" maxlength="60"></label>
+      <label class="wide">Name <input id="f-name" type="text" maxlength="60" inputmode="none"></label>
       <label>Warm-up (s) <input id="f-warmup" type="number" inputmode="numeric" min="0" max="3600"></label>
       <label>Iterations <input id="f-iterations" type="number" inputmode="numeric" min="1" max="100"></label>
       <label class="wide">Music <select id="f-music"></select></label>
@@ -54,6 +54,8 @@
       <label class="vol">Music <input id="volume" type="range" min="0" max="1" step="0.05" value="0.4"></label>
     </div>
   </main>
+
+  <div id="osk" class="hidden" aria-label="On-screen keyboard"></div>
 
   <audio id="music" loop preload="auto"></audio>
   <script src="/static/app.js"></script>

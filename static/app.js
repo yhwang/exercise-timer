@@ -26,6 +26,7 @@ function el(tag, props = {}, children = []) {
 
 function show(screen) {
   SCREENS.forEach((name) => $(name).classList.toggle("hidden", name !== screen));
+  if (screen !== "editor") hideOsk();
 }
 
 function fmt(seconds) {
@@ -139,25 +140,49 @@ function openEditor(routine) {
   show("editor");
 }
 
-function numberInput(value, onChange) {
-  const input = el("input", { type: "number", inputmode: "numeric", min: "0", max: "3600" });
+// Wraps a number input with - / + buttons so no keyboard is needed on a touchscreen.
+// The input comes first in the DOM so a surrounding <label> targets it, not a button.
+function makeStepper(input, step, min, max) {
+  input.setAttribute("inputmode", "none");
+  input.min = String(min);
+  input.max = String(max);
+  const adjust = (delta) => {
+    const current = parseInt(input.value, 10);
+    const base = Number.isInteger(current) ? current : min;
+    input.value = Math.min(max, Math.max(min, base + delta));
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+  };
+  const minus = el("button", {
+    class: "btn step minus", type: "button", text: "−", "aria-label": "Decrease", onclick: () => adjust(-step),
+  });
+  const plus = el("button", {
+    class: "btn step", type: "button", text: "+", "aria-label": "Increase", onclick: () => adjust(step),
+  });
+  const wrap = el("div", { class: "stepper" });
+  if (input.parentNode) input.replaceWith(wrap);
+  wrap.append(input, minus, plus);
+  return wrap;
+}
+
+function numberInput(value, onChange, min) {
+  const input = el("input", { type: "number" });
   input.value = value;
   input.addEventListener("input", () => onChange(parseInt(input.value, 10)));
-  return input;
+  return makeStepper(input, 5, min, 3600);
 }
 
 function renderSets() {
   const box = $("sets");
   box.replaceChildren();
   editing.sets.forEach((set, index) => {
-    const nameInput = el("input", { type: "text", maxlength: "60" });
+    const nameInput = el("input", { type: "text", maxlength: "60", inputmode: "none" });
     nameInput.value = set.name;
     nameInput.addEventListener("input", () => { set.name = nameInput.value; });
     box.appendChild(
       el("div", { class: "set" }, [
         el("label", { text: "Exercise name" }, [nameInput]),
-        el("label", { text: "Exercise (s)" }, [numberInput(set.exercise, (v) => { set.exercise = v; })]),
-        el("label", { text: "Rest (s)" }, [numberInput(set.rest, (v) => { set.rest = v; })]),
+        el("label", { text: "Exercise (s)" }, [numberInput(set.exercise, (v) => { set.exercise = v; }, 1)]),
+        el("label", { text: "Rest (s)" }, [numberInput(set.rest, (v) => { set.rest = v; }, 0)]),
         el("button", {
           class: "btn danger",
           text: "✕",
@@ -360,9 +385,115 @@ function stopRun() {
   show("list");
 }
 
+/* ---------- on-screen keyboard (for text fields) ---------- */
+
+const OSK_ROWS = [
+  "1234567890".split(""),
+  "qwertyuiop".split(""),
+  "asdfghjkl".split(""),
+  ["Shift", ..."zxcvbnm".split(""), "Del"],
+  ["-", "'", "Space", ".", "Clear", "Done"],
+];
+let oskTarget = null;
+let oskShift = false;
+
+function buildOsk() {
+  const osk = $("osk");
+  // Keep focus (and the caret) in the text field while tapping keys.
+  osk.addEventListener("mousedown", (event) => event.preventDefault());
+  OSK_ROWS.forEach((row) => {
+    const rowEl = el("div", { class: "osk-row" });
+    row.forEach((key) => {
+      const isLetter = /^[a-z]$/.test(key);
+      const cls = ["osk-key"];
+      if (key === "Space") cls.push("osk-space");
+      else if (key.length > 1) cls.push("osk-wide");
+      rowEl.appendChild(
+        el("button", {
+          class: cls.join(" "),
+          type: "button",
+          "data-key": key,
+          "data-letter": isLetter ? "1" : "",
+          text: key,
+          onclick: () => pressKey(key),
+        })
+      );
+    });
+    osk.appendChild(rowEl);
+  });
+}
+
+function shouldCapitalize(input) {
+  const before = input.value.slice(0, input.selectionStart ?? input.value.length);
+  return before === "" || /\s$/.test(before);
+}
+
+function updateOskKeys() {
+  document.querySelectorAll("#osk [data-letter='1']").forEach((btn) => {
+    const key = btn.dataset.key;
+    btn.textContent = oskShift ? key.toUpperCase() : key;
+  });
+  document.querySelector("#osk [data-key='Shift']").classList.toggle("active", oskShift);
+}
+
+function showOsk(input) {
+  oskTarget = input;
+  oskShift = shouldCapitalize(input);
+  updateOskKeys();
+  $("osk").classList.remove("hidden");
+  document.body.classList.add("osk-open");
+  // Center the field in the space above the keyboard (not the full screen).
+  setTimeout(() => {
+    const visibleHeight = window.innerHeight - $("osk").offsetHeight;
+    const rect = input.getBoundingClientRect();
+    $("editor").scrollTop += rect.top + rect.height / 2 - visibleHeight / 2;
+  }, 50);
+}
+
+function hideOsk() {
+  oskTarget = null;
+  $("osk").classList.add("hidden");
+  document.body.classList.remove("osk-open");
+}
+
+function pressKey(key) {
+  const input = oskTarget;
+  if (!input || !input.isConnected) return;
+  if (key === "Done") { hideOsk(); input.blur(); return; }
+  if (key === "Shift") { oskShift = !oskShift; updateOskKeys(); return; }
+
+  let start = input.selectionStart ?? input.value.length;
+  const end = input.selectionEnd ?? start;
+  if (key === "Clear") {
+    input.value = "";
+  } else if (key === "Del") {
+    if (start === end) {
+      if (start === 0) return;
+      start -= 1;
+    }
+    input.setRangeText("", start, end, "end");
+  } else {
+    const ch = key === "Space" ? " " : (oskShift ? key.toUpperCase() : key);
+    if (input.maxLength > 0 && input.value.length - (end - start) >= input.maxLength) return;
+    input.setRangeText(ch, start, end, "end");
+  }
+  input.dispatchEvent(new Event("input", { bubbles: true }));
+  oskShift = shouldCapitalize(input);
+  updateOskKeys();
+}
+
 /* ---------- init ---------- */
 
 async function init() {
+  buildOsk();
+  makeStepper($("f-warmup"), 5, 0, 3600);
+  makeStepper($("f-iterations"), 1, 1, 100);
+  // Show the in-page keyboard for text fields in the editor, hide it otherwise.
+  document.addEventListener("focusin", (event) => {
+    const target = event.target;
+    if (target.matches && target.matches("#editor input[type='text']")) showOsk(target);
+    else if (!target.closest || !target.closest("#osk")) hideOsk();
+  });
   $("new").addEventListener("click", () => openEditor(null));
   $("cancel").addEventListener("click", () => show("list"));
   $("save").addEventListener("click", saveEditor);

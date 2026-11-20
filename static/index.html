@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Exercise Timer</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body data-phase="idle">
+
+  <!-- Configure mode: routine list -->
+  <main id="list" class="screen">
+    <header>
+      <h1>Routines</h1>
+      <button id="new" class="btn primary">+ New routine</button>
+    </header>
+    <ul id="routines" class="cards"></ul>
+  </main>
+
+  <!-- Configure mode: routine editor -->
+  <main id="editor" class="screen hidden">
+    <header>
+      <h1>Edit routine</h1>
+      <div class="actions">
+        <button id="cancel" class="btn">Cancel</button>
+        <button id="save" class="btn primary">Save</button>
+      </div>
+    </header>
+    <div class="form">
+      <label class="wide">Name <input id="f-name" type="text" maxlength="60"></label>
+      <label>Warm-up (s) <input id="f-warmup" type="number" inputmode="numeric" min="0" max="3600"></label>
+      <label>Iterations <input id="f-iterations" type="number" inputmode="numeric" min="1" max="100"></label>
+      <label class="wide">Music <select id="f-music"></select></label>
+    </div>
+    <h2>Sets</h2>
+    <div id="sets"></div>
+    <button id="add-set" class="btn">+ Add set</button>
+    <p id="editor-error" class="error"></p>
+  </main>
+
+  <!-- Play mode -->
+  <main id="run" class="screen hidden">
+    <div id="run-where"></div>
+    <div id="run-phase"></div>
+    <div id="run-name"></div>
+    <div id="run-time">0</div>
+    <div id="run-next"></div>
+    <div class="bar"><div id="run-bar"></div></div>
+    <div class="controls">
+      <button id="pause" class="btn">Pause</button>
+      <button id="skip" class="btn">Skip</button>
+      <button id="stop" class="btn danger">Stop</button>
+      <label class="vol">Music <input id="volume" type="range" min="0" max="1" step="0.05" value="0.4"></label>
+    </div>
+  </main>
+
+  <audio id="music" loop preload="auto"></audio>
+  <script src="/static/app.js"></script>
+</body>
+</html>

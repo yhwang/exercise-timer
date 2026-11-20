@@ -54,16 +54,31 @@ input[type="text"], input[type="number"], select {
 
 #run { display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 #run:not(.hidden) { display: flex; }
-#run-where { font-size: 18px; opacity: 0.85; }
-#run-phase { font-size: 30px; font-weight: 700; letter-spacing: 3px; text-transform: uppercase; margin-top: 4px; }
-#run-name { font-size: 24px; min-height: 1.3em; }
-#run-time { font-size: 150px; font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
-#run-next { font-size: 20px; opacity: 0.9; min-height: 1.4em; }
-.bar { width: 80%; height: 10px; background: rgba(255,255,255,0.2); border-radius: 5px; margin: 10px 0 14px; overflow: hidden; }
+/* Play mode is sized in vh/vw (so it scales to any display) times --s, the user's size setting. */
+:root { --s: 1; }
+#run-where { font-size: calc(4vh * var(--s)); opacity: 0.9; }
+#run-phase { font-size: calc(7.5vh * var(--s)); font-weight: 700; letter-spacing: 0.5vh; text-transform: uppercase; line-height: 1.1; }
+#run-name { font-size: calc(5.5vh * var(--s)); min-height: 1.2em; line-height: 1.2; }
+#run-time { font-size: calc(30vh * var(--s)); font-weight: 700; line-height: 1.05; font-variant-numeric: tabular-nums; }
+#run-next { font-size: calc(4.4vh * var(--s)); opacity: 0.95; min-height: 1.3em; }
+.bar { width: 85%; height: 2vh; background: rgba(255,255,255,0.25); border-radius: 1vh; margin: 1.5vh 0 2.5vh; overflow: hidden; }
 #run-bar { height: 100%; width: 0; background: #fff; }
-.controls { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; justify-content: center; }
-.vol { flex-direction: row; align-items: center; gap: 8px; color: #f2f4f7; }
-.vol input { width: 140px; height: 32px; }
+.controls { display: flex; gap: 2vw; align-items: center; flex-wrap: wrap; justify-content: center; }
+.controls .btn {
+  min-height: calc(11vh * var(--s)); min-width: calc(12vw * var(--s)); padding: 0 2.5vw;
+  font-size: calc(4.8vh * var(--s)); border-radius: 2vh;
+}
+.vol { flex-direction: row; align-items: center; gap: 1.5vw; color: #f2f4f7; font-size: calc(3.8vh * var(--s)); }
+.vol input { -webkit-appearance: none; appearance: none; width: calc(16vw * var(--s)); height: calc(7vh * var(--s)); background: transparent; }
+.vol input::-webkit-slider-runnable-track { height: calc(2.5vh * var(--s)); border-radius: 1.25vh; background: rgba(255,255,255,0.4); }
+.vol input::-webkit-slider-thumb {
+  -webkit-appearance: none; width: calc(7vh * var(--s)); height: calc(7vh * var(--s)); margin-top: calc(-2.25vh * var(--s));
+  border-radius: 50%; background: #fff; border: 0.6vh solid #2f6fd0;
+}
+
+/* text size control, top-right of play mode (fixed size so it is always easy to hit) */
+.size-ctl { position: fixed; top: 1.5vh; right: 1.5vw; display: flex; gap: 1vw; z-index: 5; }
+.size-ctl .btn { min-width: 9vh; min-height: 9vh; padding: 0 1.5vh; font-size: 3.6vh; background: rgba(0,0,0,0.35); border-color: rgba(255,255,255,0.4); }
 
 /* +/- stepper for number fields (input first in DOM, minus displayed on the left) */
 .stepper { display: flex; gap: 6px; align-items: center; }

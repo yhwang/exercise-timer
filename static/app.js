@@ -482,6 +482,27 @@ function pressKey(key) {
   updateOskKeys();
 }
 
+/* ---------- play-mode size setting (A- / A+) ---------- */
+
+const SCALE_KEY = "exerciseTimerScale";
+const SCALE_MIN = 0.7;
+const SCALE_MAX = 1.3;
+
+function applyScale(scale) {
+  document.documentElement.style.setProperty("--s", String(scale));
+}
+
+function loadScale() {
+  const saved = parseFloat(localStorage.getItem(SCALE_KEY));
+  return Number.isFinite(saved) ? Math.min(SCALE_MAX, Math.max(SCALE_MIN, saved)) : 1;
+}
+
+function changeScale(delta) {
+  const next = Math.round(Math.min(SCALE_MAX, Math.max(SCALE_MIN, loadScale() + delta)) * 10) / 10;
+  localStorage.setItem(SCALE_KEY, String(next));
+  applyScale(next);
+}
+
 /* ---------- drag-to-scroll fallback ---------- */
 // Some kiosk setups deliver touchscreen input as mouse events, which never scroll.
 // Dragging with a mouse-type pointer scrolls the current screen; a drag is not a click.
@@ -515,6 +536,9 @@ function enableDragScroll() {
 
 async function init() {
   enableDragScroll();
+  applyScale(loadScale());
+  $("size-down").addEventListener("click", () => changeScale(-0.1));
+  $("size-up").addEventListener("click", () => changeScale(0.1));
   buildOsk();
   makeStepper($("f-warmup"), 5, 0, 3600);
   makeStepper($("f-iterations"), 1, 1, 100);

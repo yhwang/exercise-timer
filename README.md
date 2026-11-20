@@ -16,6 +16,8 @@ python app.py            # serves http://127.0.0.1:5000 (localhost only)
 
 Put `.mp3`, `.ogg`, `.wav`, `.m4a` or `.flac` files in `music/`. They appear in the routine editor's Music list. Routines are saved to `data/routines.json`.
 
+For development, `RELOAD=1 python app.py` restarts the server when a Python file changes. Files in `static/` are read from disk on every request, so just refresh the browser after editing them. `PORT=5001` changes the port (useful on macOS, where AirPlay uses 5000).
+
 ## Kiosk autostart on Raspberry Pi OS (Bookworm, labwc)
 
 Add this to `~/.config/labwc/autostart`, adjusting the path:

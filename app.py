@@ -165,4 +165,10 @@ def serve_music(name):
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
-    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)
+    # RELOAD=1 restarts the server when a Python file changes (development only; no debugger).
+    app.run(
+        host="127.0.0.1",
+        port=int(os.environ.get("PORT", "5000")),
+        debug=False,
+        use_reloader=os.environ.get("RELOAD") == "1",
+    )

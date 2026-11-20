@@ -1,4 +1,5 @@
 """Exercise timer backend: stores routines and serves the UI and music files."""
+import hashlib
 import json
 import logging
 import os
@@ -149,6 +150,17 @@ def put_routines():
         logger.error("Could not save routines", exc_info=True)
         return jsonify({"error": "Could not save"}), 500
     return jsonify(routines)
+
+
+@app.get("/api/version")
+def get_version():
+    """Fingerprint of the files in static/, so the page can reload itself after an update."""
+    digest = hashlib.sha256()
+    for path in sorted(STATIC_DIR.rglob("*")):
+        if path.is_file():
+            info = path.stat()
+            digest.update(f"{path.relative_to(STATIC_DIR)}:{info.st_mtime_ns}:{info.st_size}".encode())
+    return jsonify({"version": digest.hexdigest()})
 
 
 @app.get("/api/music")

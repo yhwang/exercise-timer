@@ -115,7 +115,9 @@ async function deleteRoutine(routine) {
 
 /* ---------- editor (configure mode) ---------- */
 
-function openEditor(routine) {
+async function openEditor(routine) {
+  // Re-read the music folder each time, so files added later show up without reloading the page.
+  try { musicFiles = await api("/api/music"); } catch { /* keep the previous list */ }
   editing = routine
     ? structuredClone(routine)
     : {
@@ -531,6 +533,21 @@ function changeScale(delta) {
   applyScale(next);
 }
 
+/* ---------- auto-update: reload when the app files change ---------- */
+// Only reloads from the routine list, never during a workout or while editing.
+function watchForUpdates() {
+  let known = null;
+  const check = async () => {
+    try {
+      const { version } = await api("/api/version");
+      if (known === null) known = version;
+      else if (version !== known && run === null && !$("list").classList.contains("hidden")) location.reload();
+    } catch { /* server restarting; try again next time */ }
+  };
+  check();
+  setInterval(check, 5000);
+}
+
 /* ---------- drag-to-scroll fallback ---------- */
 // Some kiosk setups deliver touchscreen input as mouse events, which never scroll.
 // Dragging with a mouse-type pointer scrolls the current screen; a drag is not a click.
@@ -564,6 +581,7 @@ function enableDragScroll() {
 
 async function init() {
   enableDragScroll();
+  watchForUpdates();
   applyScale(loadScale());
   $("size-down").addEventListener("click", () => changeScale(-0.1));
   $("size-up").addEventListener("click", () => changeScale(0.1));

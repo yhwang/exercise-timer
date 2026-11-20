@@ -30,6 +30,7 @@ chromium-browser --kiosk --noerrdialogs --disable-infobars \
 
 Notes:
 - Audio starts only after you tap Start, so browser autoplay rules are satisfied.
+- Voice cues ("Warm up", "Exercise", "Rest", "Workout complete") are played from `static/voice/*.wav` right after each phase's start tone. To change them, replace those files with your own recordings, or regenerate them on macOS with `say -o x.aiff "Exercise" && afconvert -f WAVE -d LEI16@22050 -c 1 x.aiff static/voice/exercise.wav`. If a clip is missing, that cue is skipped.
 - Exit kiosk mode with `Alt+F4`, or over SSH with `pkill chromium`.
 - Disable screen blanking in `raspi-config` → Display Options. The app also requests a screen wake lock while a routine runs.
 

@@ -251,6 +251,32 @@ function beep(freq, duration = 0.15, delay = 0) {
 const WARN_TONE = 660;
 const START_TONES = { warmup: 523, exercise: 988, rest: 440 };
 
+/* ---------- voice cues (pre-recorded clips in static/voice/) ---------- */
+
+const VOICE_NAMES = ["warmup", "exercise", "rest", "done"];
+const voiceClips = {};
+
+function loadVoices() {
+  VOICE_NAMES.forEach((name) => {
+    const clip = new Audio(`/static/voice/${name}.wav`);
+    clip.preload = "auto";
+    voiceClips[name] = clip;
+  });
+}
+
+// Say the cue after a short delay, so it follows the start tone instead of overlapping it.
+// Skipped if the run was stopped or paused in the meantime.
+function speak(name, delayMs) {
+  const current = run;
+  setTimeout(() => {
+    if (run !== current || current.paused) return;
+    Object.values(voiceClips).forEach((clip) => clip.pause());
+    const clip = voiceClips[name];
+    clip.currentTime = 0;
+    clip.play().catch(() => {});
+  }, delayMs);
+}
+
 function startMusic(file) {
   const music = $("music");
   music.volume = parseFloat($("volume").value);
@@ -309,6 +335,7 @@ function beginPhase(index) {
   run.last = performance.now();
   document.body.dataset.phase = phase.type;
   beep(START_TONES[phase.type], 0.45);
+  speak(phase.type, 500);
   renderRun();
 }
 
@@ -324,6 +351,7 @@ function finishRun() {
   releaseWakeLock();
   document.body.dataset.phase = "done";
   [523, 659, 784, 1047].forEach((freq, i) => beep(freq, 0.3, i * 0.2));
+  speak("done", 1200);
   $("run-where").textContent = run.routine.name;
   $("run-phase").textContent = "Done";
   $("run-name").textContent = "Great work!";
@@ -540,6 +568,7 @@ async function init() {
   $("size-down").addEventListener("click", () => changeScale(-0.1));
   $("size-up").addEventListener("click", () => changeScale(0.1));
   buildOsk();
+  loadVoices();
   makeStepper($("f-warmup"), 5, 0, 3600);
   makeStepper($("f-iterations"), 1, 1, 100);
   // Show the in-page keyboard for text fields in the editor, hide it otherwise.

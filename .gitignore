@@ -5,3 +5,4 @@ __pycache__/
 data/
 music/*
 !music/.gitkeep
+static/voice/*.wav

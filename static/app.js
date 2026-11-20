@@ -240,17 +240,17 @@ function beep(freq, duration = 0.15, delay = 0) {
   const start = audioCtx.currentTime + delay;
   const osc = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
-  osc.type = "sine";
+  osc.type = "triangle";
   osc.frequency.value = freq;
   gain.gain.setValueAtTime(0.0001, start);
-  gain.gain.exponentialRampToValueAtTime(0.6, start + 0.01);
+  gain.gain.exponentialRampToValueAtTime(0.9, start + 0.01);
   gain.gain.exponentialRampToValueAtTime(0.0001, start + duration);
   osc.connect(gain).connect(audioCtx.destination);
   osc.start(start);
   osc.stop(start + duration + 0.05);
 }
 
-const WARN_TONE = 660;
+const WARN_TONE = 880;
 const START_TONES = { warmup: 523, exercise: 988, rest: 440 };
 
 /* ---------- voice cues (pre-recorded clips in static/voice/) ---------- */
@@ -279,9 +279,46 @@ function speak(name, delayMs) {
   }, delayMs);
 }
 
+/* ---------- music volume and ducking ---------- */
+
+const DUCK_FACTOR = 0.25;   // music level while a beep or voice cue is sounding
+let musicDucked = false;
+let duckTimer = null;
+let fadeTimer = null;
+
+function musicTargetVolume() {
+  return parseFloat($("volume").value) * (musicDucked ? DUCK_FACTOR : 1);
+}
+
+// Set the music volume now (ms = 0) or fade to it over ms milliseconds.
+function setMusicVolume(target, ms = 0) {
+  const music = $("music");
+  clearInterval(fadeTimer);
+  if (ms <= 0) { music.volume = target; return; }
+  const from = music.volume;
+  const steps = Math.max(1, Math.round(ms / 50));
+  let step = 0;
+  fadeTimer = setInterval(() => {
+    step += 1;
+    music.volume = Math.min(1, Math.max(0, from + ((target - from) * step) / steps));
+    if (step >= steps) clearInterval(fadeTimer);
+  }, 50);
+}
+
+// Dip the music so beeps and voice cues stand out, then fade it back up after holdMs.
+function duckMusic(holdMs) {
+  musicDucked = true;
+  setMusicVolume(musicTargetVolume(), 150);
+  clearTimeout(duckTimer);
+  duckTimer = setTimeout(() => {
+    musicDucked = false;
+    setMusicVolume(musicTargetVolume(), 600);
+  }, holdMs);
+}
+
 function startMusic(file) {
   const music = $("music");
-  music.volume = parseFloat($("volume").value);
+  setMusicVolume(musicTargetVolume());
   if (!file) { music.removeAttribute("src"); return; }
   music.src = `/music/${encodeURIComponent(file)}`;
   music.play().catch(() => {});
@@ -289,6 +326,9 @@ function startMusic(file) {
 
 function stopMusic() {
   const music = $("music");
+  clearTimeout(duckTimer);
+  clearInterval(fadeTimer);
+  musicDucked = false;
   music.pause();
   music.removeAttribute("src");
   music.load();
@@ -337,6 +377,7 @@ function beginPhase(index) {
   run.last = performance.now();
   document.body.dataset.phase = phase.type;
   beep(START_TONES[phase.type], 0.45);
+  duckMusic(2300);
   speak(phase.type, 500);
   renderRun();
 }
@@ -374,7 +415,8 @@ function tick() {
   const secs = Math.ceil(run.remaining / 1000);
   if (secs <= 3 && secs !== run.lastBeep) {
     run.lastBeep = secs;
-    beep(WARN_TONE, 0.12);
+    beep(WARN_TONE, 0.18);
+    duckMusic(1300);
   }
   renderRun();
 }
@@ -605,7 +647,7 @@ async function init() {
   $("pause").addEventListener("click", togglePause);
   $("skip").addEventListener("click", () => { if (run && !run.done) nextPhase(); });
   $("stop").addEventListener("click", stopRun);
-  $("volume").addEventListener("input", () => { $("music").volume = parseFloat($("volume").value); });
+  $("volume").addEventListener("input", () => setMusicVolume(musicTargetVolume()));
 
   try {
     [routines, musicFiles] = await Promise.all([api("/api/routines"), api("/api/music")]);

@@ -25,7 +25,7 @@ Add this to `~/.config/labwc/autostart`, adjusting the path:
 sleep 3
 chromium-browser --kiosk --noerrdialogs --disable-infobars \
   --password-store=basic --autoplay-policy=no-user-gesture-required \
-  http://127.0.0.1:5000 &
+  --touch-events=enabled http://127.0.0.1:5000 &
 ```
 
 Notes:

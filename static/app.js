@@ -482,9 +482,39 @@ function pressKey(key) {
   updateOskKeys();
 }
 
+/* ---------- drag-to-scroll fallback ---------- */
+// Some kiosk setups deliver touchscreen input as mouse events, which never scroll.
+// Dragging with a mouse-type pointer scrolls the current screen; a drag is not a click.
+function enableDragScroll() {
+  let drag = null;
+  let moved = false;
+  document.addEventListener("pointerdown", (event) => {
+    moved = false;
+    drag = null;
+    if (event.pointerType !== "mouse" || event.button !== 0) return;
+    const screen = event.target.closest(".screen");
+    if (!screen || event.target.closest("input, select, #osk")) return;
+    drag = { screen, startY: event.clientY, startTop: screen.scrollTop };
+  });
+  document.addEventListener("pointermove", (event) => {
+    if (!drag) return;
+    const dy = event.clientY - drag.startY;
+    if (!moved && Math.abs(dy) < 8) return;
+    moved = true;
+    drag.screen.scrollTop = drag.startTop - dy;
+  });
+  const end = () => { drag = null; };
+  document.addEventListener("pointerup", end);
+  document.addEventListener("pointercancel", end);
+  document.addEventListener("click", (event) => {
+    if (moved) { event.preventDefault(); event.stopPropagation(); moved = false; }
+  }, true);
+}
+
 /* ---------- init ---------- */
 
 async function init() {
+  enableDragScroll();
   buildOsk();
   makeStepper($("f-warmup"), 5, 0, 3600);
   makeStepper($("f-iterations"), 1, 1, 100);

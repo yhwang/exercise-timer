@@ -18,6 +18,16 @@ Put `.mp3`, `.ogg`, `.wav`, `.m4a` or `.flac` files in `music/`. They appear in 
 
 For development, `RELOAD=1 python app.py` restarts the server when a Python file changes. Files in `static/` are read from disk on every request, so just refresh the browser after editing them. `PORT=5001` changes the port (useful on macOS, where AirPlay uses 5000).
 
+## Start script
+
+`scripts/run.sh` starts the server (in the background, logging to `data/server.log`) and then opens Chromium in kiosk mode on it. Run it again at any time to restart: it stops the server already running from this project, and closes any running Chromium, before starting both again. It works from a terminal on the Pi, from SSH (it targets the Pi's `wayland-0` display), or from the labwc autostart.
+
+```bash
+./scripts/run.sh
+```
+
+Options are environment variables: `PORT` (default 5000), `ALLOW_QUIT=0` to hide the Exit button (it is on by default here), `RELOAD=1` for development, `CHROMIUM` to choose the browser command, and `NO_BROWSER=1` to restart only the server.
+
 ## Kiosk autostart on Raspberry Pi OS (Bookworm, labwc)
 
 Add this to `~/.config/labwc/autostart`, adjusting the path:

@@ -26,7 +26,25 @@ For development, `RELOAD=1 python app.py` restarts the server when a Python file
 ./scripts/run.sh
 ```
 
-Options are environment variables: `PORT` (default 5000), `ALLOW_QUIT=0` to hide the Exit button (it is on by default here), `RELOAD=1` for development, `CHROMIUM` to choose the browser command, and `NO_BROWSER=1` to restart only the server.
+Options are environment variables: `PORT` (default 5000), `ALLOW_QUIT=0` to hide the Exit button (it is on by default here), `RELOAD=1` for development, `CHROMIUM` to choose the browser command, `NO_BROWSER=1` to restart only the server, `BT_AUDIO=0` to skip the Bluetooth step below, and `BT_SPEAKER` to pick a speaker by MAC address or part of its name.
+
+### Bluetooth speaker
+
+Before it starts the server and Chromium, `run.sh` calls `scripts/bt-audio.sh`. That script finds a paired Bluetooth speaker, connects it if needed, waits for its audio output to appear, and makes it the default output. If no speaker is paired, or it is off or out of range, it says so and the default output (headphone jack or HDMI) is used.
+
+Pair the speaker once. Put it in pairing mode, then run `bluetoothctl` on the Pi:
+
+```
+power on
+agent on
+default-agent
+scan on
+pair AA:BB:CC:DD:EE:FF
+trust AA:BB:CC:DD:EE:FF
+connect AA:BB:CC:DD:EE:FF
+```
+
+Use the speaker's address from the `scan on` output, then `scan off` and `exit`. After that, switch the speaker on and run `./scripts/run.sh`. You can also run `./scripts/bt-audio.sh` on its own. Raspberry Pi OS Bookworm (PipeWire) is assumed.
 
 ## Kiosk autostart on Raspberry Pi OS (Bookworm, labwc)
 

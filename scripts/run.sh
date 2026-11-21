@@ -9,6 +9,8 @@
 #   RELOAD=1         restart the server when a Python file changes (development)
 #   CHROMIUM=...     browser command (default: chromium, then chromium-browser)
 #   NO_BROWSER=1     start only the server
+#   BT_AUDIO=0       skip connecting a Bluetooth speaker (see scripts/bt-audio.sh)
+#   BT_SPEAKER=...   Bluetooth speaker MAC or part of its name (default: first paired speaker)
 
 set -u
 
@@ -84,6 +86,11 @@ wait_for_server() {
 
 stop_server
 mkdir -p "${APP_DIR}/data"
+
+# Route audio to a paired Bluetooth speaker before the browser starts.
+if [ "${BT_AUDIO:-1}" != "0" ]; then
+  "${APP_DIR}/scripts/bt-audio.sh"
+fi
 
 echo "Starting server on ${URL}"
 (

@@ -638,6 +638,7 @@ async function init() {
     else if (!target.closest || !target.closest("#osk")) hideOsk();
   });
   $("new").addEventListener("click", () => openEditor(null));
+  $("quit").addEventListener("click", quitApp);
   $("cancel").addEventListener("click", () => show("list"));
   $("save").addEventListener("click", saveEditor);
   $("add-set").addEventListener("click", () => {
@@ -657,6 +658,23 @@ async function init() {
   }
   renderList();
   show("list");
+
+  // The Exit button only appears when the server was started with ALLOW_QUIT=1.
+  try {
+    const config = await api("/api/config");
+    $("quit").classList.toggle("hidden", !config.quit);
+  } catch {
+    // Leave the button hidden.
+  }
+}
+
+async function quitApp() {
+  if (!window.confirm("Close the app and the browser?")) return;
+  try {
+    await api("/api/quit", { method: "POST", headers: { "X-Requested-With": "exercise-timer" } });
+  } catch {
+    // The browser may already be closing.
+  }
 }
 
 init();

@@ -4,7 +4,9 @@ import json
 import logging
 import os
 import re
+import subprocess
 import tempfile
+import threading
 from pathlib import Path
 
 from flask import Flask, abort, jsonify, request, send_from_directory
@@ -34,6 +36,10 @@ DEFAULT_ROUTINES = [
 app = Flask(__name__, static_folder=None)
 app.config["MAX_CONTENT_LENGTH"] = 256 * 1024
 logger = logging.getLogger("exercise-timer")
+
+# The "Exit" button can close the kiosk browser. Off unless the server is started with ALLOW_QUIT=1.
+ALLOW_QUIT = os.environ.get("ALLOW_QUIT") == "1"
+BROWSER_PROCESS_NAMES = ("chromium", "chromium-browser")
 
 
 def _int(value, low, high):
@@ -161,6 +167,29 @@ def get_version():
             info = path.stat()
             digest.update(f"{path.relative_to(STATIC_DIR)}:{info.st_mtime_ns}:{info.st_size}".encode())
     return jsonify({"version": digest.hexdigest()})
+
+
+def close_browser():
+    for name in BROWSER_PROCESS_NAMES:
+        subprocess.run(["pkill", "-x", name], check=False, timeout=5)
+
+
+@app.get("/api/config")
+def get_config():
+    return jsonify({"quit": ALLOW_QUIT})
+
+
+@app.post("/api/quit")
+def post_quit():
+    if not ALLOW_QUIT:
+        abort(404)
+    # A custom header cannot be sent by another site without CORS approval, which blocks CSRF.
+    if request.headers.get("X-Requested-With") != "exercise-timer":
+        return jsonify({"error": "Invalid request"}), 400
+    logger.info("Browser close requested")
+    # Close after the response has been sent, so the page receives it first.
+    threading.Timer(0.5, close_browser).start()
+    return jsonify({"ok": True})
 
 
 @app.get("/api/music")
